@@ -25,7 +25,6 @@ function Details(props) {
 class AddComponent extends React.Component {
   add() {
     let citycode = document.getElementById("inCode").value;
-    console.log(citycode);
     this.props.addfunc(citycode);
   }
 
@@ -39,31 +38,65 @@ class AddComponent extends React.Component {
   }
 }
 
+function CityItem(props) {
+  let details = null;
+  let style = null;
+  let index = props.index;
+  let citydata = props.appdata.citydata;
+  let showIndex = props.appdata.showIndex;
+  let delIndex = props.appdata.delIndex;
+  let showDetails = props.appdata.showDetails;
+  let delCity = props.appdata.delCity;
+  let touchstart = props.appdata.touchstart;
+  let touchmove = props.appdata.touchmove;
+
+  if(index === showIndex) {
+    details = <Details lives={citydata[index].lives} forecast={citydata[index].forecast}/>;
+  }
+  // if(index === delIndex) {
+  //   let offset = '-'+document.getElementsByClassName("delbtn")[0].clientWidth.toString()+'px';
+  //   style = {
+  //     marginLeft: offset
+  //   };
+  // } else {
+  //   style = {
+  //     marginLeft: 0
+  //   };
+  // }
+
+  return (
+    <div className="CityItem" >
+          <div className="CityItem_ScrollWrapper">
+            <div className="CityItem_LongWrapper"  onTouchStart={(e) => touchstart(e)} onTouchMove={(e) => touchmove(e,index)} style={style}>
+              <div className="CityItem_NormalWrapper font2" onClick={() => showDetails(index)}>
+                  <div className="CityItem_city">{citydata[index].city}</div>
+                  <div className="CityItem_temp">{citydata[index].lives.temperature}&#176;</div>                       
+              </div>
+              <div className="delbtn font1" onClick={() => delCity(index)}><div>删除</div></div>
+            </div>               
+          </div>       
+          {details}
+    </div>
+  );
+}
+
 class CityList extends React.Component {
 
   render() {
     let citydata = this.props.data;
-    let showIndex = this.props.index;
-    let showDetails = this.props.showfunc;
-
-    const CityItems = citydata.map((item,index) => {
-      let details = null;
-      if(index === showIndex) {
-        details = <Details lives={citydata[index].lives} forecast={citydata[index].forecast}/>;
-      }
+    let AppData = {
+      citydata: citydata,
+      showIndex: this.props.showindex,
+      delIndex: this.props.delindex,
+      showDetails: this.props.showfunc,
+      delCity: this.props.delfunc,
+      touchstart: this.props.touchstart,
+      touchmove: this.props.touchmove
+    }
+    
+    const CityItems = citydata.map((item,index) => {     
       return (
-        <div className="CityItem" key={item.city} onClick={() => showDetails(index)}>
-          <div className="CityItem_ScrollWrapper">
-              <div className="CityItem_LongWrapper" >
-                <div className="CityItem_NormalWrapper font2">
-                  <div className="CityItem_city">{citydata[index].city}</div>
-                  <div className="CityItem_temp">{citydata[index].lives.temperature}&#176;</div>                       
-                </div>
-                <div className="delbtn font1" onClick={() => this.props.delfunc(index)}>删除</div>  
-              </div>
-          </div>       
-          {details}
-        </div>
+        <CityItem key={item.city} index={index} appdata={AppData}></CityItem>
       );
     });
 
@@ -80,8 +113,11 @@ class App extends React.Component {
     super(props);
     this.state = {
       citydata: [],
-      showIndex: -1
+      showIndex: -1,
+      delIndex: -1
     };   
+    this.startX = 0;
+    this.startY = 0;
   }
 
   isExist(city) {
@@ -116,23 +152,30 @@ class App extends React.Component {
             }]),
             showIndex: this.state.showIndex        
         });
-        console.log(this.state.showIndex);
       }.bind(this)
     });
   }
 
   delCity(i) {
     let citydata = this.state.citydata.slice();
-    let index = this.state.showIndex;
+    let showIndex = this.state.showIndex;
     citydata.splice(i,1);
-    if(index == i) {
-      index = -1;
+    if(showIndex === i) {
+      showIndex = -1;
+    } else if(showIndex > i) {
+      showIndex -= 1;
     }
     this.setState({
       citydata: citydata,
-      showIndex: index
+      showIndex: showIndex,
+      delIndex: -1
     });
-    console.log(this.state.showIndex);
+  }
+
+  moveDelBtn() {
+    this.setState({
+      delIndex: -1
+    });
   }
 
   showDetails(index) {
@@ -146,17 +189,45 @@ class App extends React.Component {
         showIndex: -1
       });
     }   
-    console.log(this.state.showIndex);
+  }
+
+  touchstart(e) {
+    this.startX = e.changedTouches[0].pageX;
+　　this.startY = e.changedTouches[0].pageY;
+  }
+
+  touchmove(e, index) {
+    e.nativeEvent.stopImmediatePropagation();
+    let moveEndX = e.changedTouches[0].pageX;
+　　let moveEndY = e.changedTouches[0].pageY;
+　　let X = moveEndX - this.startX;
+　　let Y = moveEndY - this.startY;
+    let width = document.getElementsByClassName("delbtn")[0].clientWidth;
+    let height = document.getElementsByClassName("delbtn")[0].clientHeight;
+    if(X < -width && (Y > -height || Y < height)) {   // 左滑
+      // this.setState({
+      //   delIndex: index
+      // });
+      let offset = '-'+document.getElementsByClassName("delbtn")[0].clientWidth.toString()+'px';
+      document.getElementsByClassName("CityItem_LongWrapper")[index].setAttribute("margin-left",offset);   
+    }
+    if(X > width && (Y > -height || Y < height)) {    // 右滑
+      // this.setState({
+      //   delIndex: -1
+      // });
+      document.getElementsByClassName("CityItem_LongWrapper")[index].setAttribute("margin-left",0); 
+    }
   }
   
   componentWillMount() {
     this.addCity('110000');
+    document.addEventListener('click', this.moveDelBtn.bind(this));
   }
 
   render() {
     return (
       <div className="App">
-        <CityList data={this.state.citydata} index={this.state.showIndex} showfunc={index => this.showDetails(index)} delfunc={(index) => this.delCity(index)}/>
+        <CityList data={this.state.citydata} showindex={this.state.showIndex} delindex={this.state.delIndex} showfunc={index => this.showDetails(index)} delfunc={(index) => this.delCity(index)} touchstart={(e) => this.touchstart(e)} touchmove={(e,i) => this.touchmove(e,i)}/>
         <AddComponent addfunc={code => this.addCity(code)}></AddComponent>
       </div>
     );

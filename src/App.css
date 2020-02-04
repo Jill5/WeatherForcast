@@ -57,14 +57,13 @@
 }
 
 .CityItem_ScrollWrapper {
-  overflow: scroll;
-}
-.CityItem_ScrollWrapper::-webkit-scrollbar {
-  display: none;
+  width: 100%;
+  overflow: hidden;
 }
 
 .CityItem_LongWrapper {
   width: 120%;
+  float: left;
   display: flex;
   flex-flow: row nowrap;
   justify-content: left;
@@ -75,6 +74,8 @@
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-between;
+  background: white;
+  
 }
 .CityItem_NormalWrapper div {
   padding: 1rem;
@@ -88,10 +89,11 @@
 .delbtn {
   background-color: red;
   color: white;
-  flex-grow: 1;
-  align-items:center; 
-  justify-content: center;
   display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  flex-grow: 1;
+  z-index: 1;
 }
 
 .details {
