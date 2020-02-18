@@ -1,7 +1,8 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import $ from 'jquery';
+import { HashRouter as Router, Link, Route } from 'react-router-dom';
+import addIcon from "./images/add.png"
 
 function Details(props) {
   return (
@@ -53,21 +54,21 @@ function CityItem(props) {
   if(index === showIndex) {
     details = <Details lives={citydata[index].lives} forecast={citydata[index].forecast}/>;
   }
-  // if(index === delIndex) {
-  //   let offset = '-'+document.getElementsByClassName("delbtn")[0].clientWidth.toString()+'px';
-  //   style = {
-  //     marginLeft: offset
-  //   };
-  // } else {
-  //   style = {
-  //     marginLeft: 0
-  //   };
-  // }
+  if(index === delIndex) {
+    let offset = '-'+document.getElementsByClassName("delbtn")[0].clientWidth.toString()+'px';
+    style = {
+      marginLeft: offset
+    };
+  } else {
+    style = {
+      marginLeft: 0
+    };
+  }
 
   return (
     <div className="CityItem" >
           <div className="CityItem_ScrollWrapper">
-            <div className="CityItem_LongWrapper"  onTouchStart={(e) => touchstart(e)} onTouchMove={(e) => touchmove(e,index)} style={style}>
+            <div className="CityItem_LongWrapper" style={style} onTouchStart={(e) => touchstart(e)} onTouchMove={(e) => touchmove(e,index)} >
               <div className="CityItem_NormalWrapper font2" onClick={() => showDetails(index)}>
                   <div className="CityItem_city">{citydata[index].city}</div>
                   <div className="CityItem_temp">{citydata[index].lives.temperature}&#176;</div>                       
@@ -118,6 +119,12 @@ class App extends React.Component {
     };   
     this.startX = 0;
     this.startY = 0;
+    document.addEventListener('click', this.moveDelBtn.bind(this));
+    this.addCity('110000');  
+    let citycode = this.props.match.params.citycode;
+    if(citycode != null) {
+      this.addCity(citycode);
+    }
   }
 
   isExist(city) {
@@ -205,30 +212,59 @@ class App extends React.Component {
     let width = document.getElementsByClassName("delbtn")[0].clientWidth;
     let height = document.getElementsByClassName("delbtn")[0].clientHeight;
     if(X < -width && (Y > -height || Y < height)) {   // 左滑
-      // this.setState({
-      //   delIndex: index
-      // });
-      let offset = '-'+document.getElementsByClassName("delbtn")[0].clientWidth.toString()+'px';
-      document.getElementsByClassName("CityItem_LongWrapper")[index].setAttribute("margin-left",offset);   
+      this.setState({
+        delIndex: index
+      });
+      // let offset = '-'+document.getElementsByClassName("delbtn")[0].clientWidth.toString()+'px';
+      // document.getElementsByClassName("CityItem_LongWrapper")[index].setAttribute("margin-left",offset);   
     }
     if(X > width && (Y > -height || Y < height)) {    // 右滑
-      // this.setState({
-      //   delIndex: -1
-      // });
-      document.getElementsByClassName("CityItem_LongWrapper")[index].setAttribute("margin-left",0); 
+      this.setState({
+        delIndex: -1
+      });
+      // document.getElementsByClassName("CityItem_LongWrapper")[index].setAttribute("margin-left",0); 
     }
   }
-  
-  componentWillMount() {
-    this.addCity('110000');
-    document.addEventListener('click', this.moveDelBtn.bind(this));
+
+  setUnit(e) {
+    if(e.target.id === "cen" && document.getElementById("cen").className === "unselected_unit font15") {
+      document.getElementById("cen").className = "selected_unit font15";
+      document.getElementById("fah").className = "unselected_unit font15";
+      let citydata = this.state.citydata.slice();
+      for(let i = 0; i < citydata.length; i++) {
+        let cen = Math.round( (5/9) * (citydata[i].lives.temperature-32) );
+        citydata[i].lives.temperature = cen;
+      }
+      this.setState({
+        citydata: citydata
+      });
+
+    } else if(e.target.id === "fah" && document.getElementById("fah").className === "unselected_unit font15") {
+      document.getElementById("cen").className = "unselected_unit font15";
+      document.getElementById("fah").className = "selected_unit font15";
+      let citydata = this.state.citydata.slice();
+      for(let i = 0; i < citydata.length; i++) {
+        let fah = Math.round( (9/5) * citydata[i].lives.temperature + 32 );
+        citydata[i].lives.temperature = fah;
+      }
+      this.setState({
+        citydata: citydata
+      });
+    }
   }
 
   render() {
     return (
       <div className="App">
         <CityList data={this.state.citydata} showindex={this.state.showIndex} delindex={this.state.delIndex} showfunc={index => this.showDetails(index)} delfunc={(index) => this.delCity(index)} touchstart={(e) => this.touchstart(e)} touchmove={(e,i) => this.touchmove(e,i)}/>
-        <AddComponent addfunc={code => this.addCity(code)}></AddComponent>
+        <div className="bar">
+          <div>
+            <div id="cen" className="selected_unit font15" onClick={(e) => this.setUnit(e)}> &#176;C </div>
+            <div id="fah" className="unselected_unit font15" onClick={(e) => this.setUnit(e)}> &#176;F </div>
+          </div>
+          <Link to="/search"><img src={addIcon} className="addBtn"/></Link>
+        </div>
+        
       </div>
     );
   }
